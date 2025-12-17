@@ -27,29 +27,14 @@ class EncryptionService:
     """
 
     def __init__(self):
-        self.kms_client = boto3.client('kms', region_name=settings.AWS_REGION)
         self.current_key_id = settings.KMS_KEY_ID
         self._cipher = None
-        self._initialize_cipher()
+        self._initialize_local_cipher()  # Use local cipher for demo
 
-    def _initialize_cipher(self):
-        """Initialize Fernet cipher with derived key"""
-        try:
-            # Get data key from KMS
-            response = self.kms_client.generate_data_key(
-                KeyId=self.current_key_id,
-                KeySpec='AES_256'
-            )
-            key = base64.urlsafe_b64encode(response['Plaintext'][:32])
-            self._cipher = Fernet(key)
-            logger.info("encryption_initialized", key_id=self.current_key_id)
-        except ClientError as e:
-            logger.warning(
-                "kms_unavailable_using_local_key",
-                error=str(e)
-            )
-            # Fallback to local key for development
-            self._cipher = Fernet(self._derive_local_key())
+    def _initialize_local_cipher(self):
+        """Initialize Fernet cipher with local key (demo mode)"""
+        self._cipher = Fernet(self._derive_local_key())
+        logger.info("encryption_initialized_local_mode", key_id=self.current_key_id)
 
     def _derive_local_key(self) -> bytes:
         """Derive a local encryption key (for development only)"""
